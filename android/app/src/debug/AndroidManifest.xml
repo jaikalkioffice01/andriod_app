@@ -1,0 +1,4 @@
+<!-- Extra permissions ONLY for debug builds (e.g. hot reload over network). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>

@@ -1,0 +1,4 @@
+<!-- Extra permissions ONLY for profile builds (profiling tooling). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>

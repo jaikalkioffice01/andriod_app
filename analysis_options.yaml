@@ -1,0 +1,12 @@
+# Lint rules for the project (what the analyzer warns about).
+# `flutter_lints` is the official recommended set of rules.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Add or remove rules here as you learn what they do.
+    prefer_single_quotes: true

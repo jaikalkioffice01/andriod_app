@@ -1,0 +1,46 @@
+name: shopkart
+description: "ShopKart - A simple Flutter e-commerce demo app built to learn Android app structure."
+publish_to: "none" # This app is for learning, we never publish it.
+version: 1.0.0+1
+
+# ---------------------------------------------------------------------------
+# ENVIRONMENT
+# The Dart SDK version this project needs.
+# ---------------------------------------------------------------------------
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+# ---------------------------------------------------------------------------
+# DEPENDENCIES (packages the app uses at runtime)
+# ---------------------------------------------------------------------------
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management: Providers are ChangeNotifier objects that the UI
+  # "watches". When data changes, only the listening widgets rebuild.
+  provider: ^6.1.2
+
+  # Local key-value storage on the device (survives app restarts).
+  # We use it to save: logged-in user, cart items and wishlist items.
+  shared_preferences: ^2.2.3
+
+# ---------------------------------------------------------------------------
+# DEV DEPENDENCIES (only used while developing / testing)
+# ---------------------------------------------------------------------------
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+# ---------------------------------------------------------------------------
+# FLUTTER SPECIFIC CONFIG
+# ---------------------------------------------------------------------------
+flutter:
+  # Allows us to use Material Design icons (Icons.*).
+  uses-material-design: true
+
+  # NOTE: This demo app uses emoji as product images, so there are no
+  # image assets to declare. If you add images later, declare them here:
+  # assets:
+  #   - assets/images/

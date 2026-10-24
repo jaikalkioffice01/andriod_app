@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopKart — Live Preview</title>
+<style>
+  :root{
+    --primary:#5B4FE9; --accent:#FF6B35; --bg:#F7F7FB; --card:#fff;
+    --border:#ECECF4; --ink:#1B1B2F; --muted:#8A8A9E; --pink:#E91E63;
+    --green:#2E7D32; --star:#FFB300;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:Roboto,-apple-system,'Segoe UI',Arial,sans-serif;
+    background:linear-gradient(135deg,#1c1932 0%,#2b2454 55%,#3b2f6e 100%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:22px 16px 30px;color:#fff;
+  }
+  .page-head{text-align:center;margin-bottom:16px}
+  .page-head h1{font-size:22px;font-weight:800;letter-spacing:.2px}
+  .page-head h1 span{color:#a99fff}
+  .page-head p{font-size:13px;color:#c9c5ea;margin-top:5px;max-width:640px;line-height:1.5}
+  .page-head .tip{display:inline-block;margin-top:8px;font-size:12px;background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.15);padding:5px 12px;border-radius:999px;color:#e4e0ff}
+
+  /* ---------- phone frame ---------- */
+  .phone{
+    width:392px;max-width:100%;height:min(844px,calc(100vh - 150px));min-height:560px;
+    background:var(--bg);border-radius:34px;overflow:hidden;position:relative;
+    box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 10px #0d0b1a,0 0 0 12px #3a355e;
+    color:var(--ink);
+  }
+  .statusbar{height:30px;display:flex;justify-content:space-between;align-items:center;
+    padding:0 18px;font-size:12px;font-weight:600;color:var(--ink);background:transparent;position:relative;z-index:5}
+  .statusbar .sicons{display:flex;gap:5px;align-items:center;font-size:11px}
+
+  .screen{position:absolute;inset:0;bottom:0;background:var(--bg);display:none;flex-direction:column}
+  .screen.active{display:flex}
+  .screen.overlay{z-index:20}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+
+  /* ---------- generic ---------- */
+  .appbar{display:flex;align-items:center;gap:6px;padding:6px 12px;min-height:52px}
+  .appbar .title{font-size:19px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .iconbtn{width:40px;height:40px;border:none;background:transparent;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+  .iconbtn:active{background:rgba(0,0,0,.06)}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;
+    border:none;border-radius:14px;font-size:15.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn-filled{background:var(--primary);color:#fff}
+  .btn-filled:active{opacity:.85}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-outlined{background:transparent;color:var(--primary);border:1.6px solid var(--primary)}
+  .field{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E4E4F0;
+    border-radius:14px;padding:0 14px;height:52px;margin-bottom:13px}
+  .field svg{flex:none;color:#8A8A9E}
+  .field input{border:none;outline:none;flex:1;font-size:15px;background:transparent;font-family:inherit;color:var(--ink)}
+  .field.err{border-color:#D32F2F;background:#FFF6F6}
+
+  .snack{position:absolute;left:16px;right:16px;bottom:96px;z-index:60;background:#322F35;color:#fff;
+    padding:13px 16px;border-radius:10px;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.3);
+    opacity:0;transform:translateY(12px);transition:all .22s;pointer-events:none;line-height:1.4}
+  .snack.show{opacity:1;transform:translateY(0)}
+
+  .modal-veil{position:absolute;inset:0;background:rgba(27,27,47,.45);z-index:70;display:none;
+    align-items:center;justify-content:center;padding:24px}
+  .modal-veil.show{display:flex}
+  .dialog{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:310px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  .dialog h3{font-size:17px;margin-bottom:10px}
+  .dialog p{font-size:13.5px;color:#4a4a5c;line-height:1.5;margin-bottom:18px}
+  .dialog .row{display:flex;justify-content:flex-end;gap:6px}
+  .dialog button{border:none;background:none;font-family:inherit;font-size:14px;font-weight:700;
+    color:var(--primary);padding:8px 12px;border-radius:8px;cursor:pointer}
+  .dialog button.fill{background:var(--primary);color:#fff;border-radius:20px;padding:9px 18px}
+
+  /* ---------- splash ---------- */
+  #scr-splash{align-items:center;justify-content:center;display:none}
+  #scr-splash.active{display:flex}
+  .logo-box{width:96px;height:96px;border-radius:28px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(91,79,233,.45)}
+  .logo-box svg{width:48px;height:48px;fill:#fff}
+  .splash-name{font-size:30px;font-weight:800;margin-top:20px}
+  .splash-sub{font-size:13.5px;color:var(--muted);margin-top:6px}
+  .spinner{width:28px;height:28px;border:3px solid rgba(91,79,233,.2);border-top-color:var(--primary);
+    border-radius:50%;margin-top:34px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- auth ---------- */
+  .auth-wrap{padding:26px 24px 30px;overflow-y:auto}
+  .auth-logo{width:72px;height:72px;border-radius:22px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+  .auth-logo svg{width:36px;height:36px;fill:#fff}
+  .auth-title{font-size:24px;font-weight:800}
+  .auth-sub{font-size:13.5px;color:var(--muted);margin:5px 0 26px}
+  .link-row{text-align:center;margin-top:22px;font-size:14px}
+  .link-row a{color:var(--primary);font-weight:700;text-decoration:none;cursor:pointer}
+  .cred{margin-top:16px;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.6}
+  .field-msg{font-size:12px;color:#D32F2F;margin:-8px 0 12px 4px;display:none}
+  .field-msg.show{display:block}
+
+  /* ---------- shell / nav ---------- */
+  .tab{flex:1;display:none;flex-direction:column;overflow:hidden}
+  .tab.active{display:flex}
+  .navbar{height:66px;background:#fff;border-top:1px solid var(--border);display:flex;z-index:10}
+  .nav-item{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;cursor:pointer;font-family:inherit;position:relative}
+  .nav-item .pill{width:56px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;position:relative}
+  .nav-item.on .pill{background:rgba(91,79,233,.14)}
+  .nav-item span{font-size:10.5px;font-weight:600;color:var(--muted)}
+  .nav-item.on span{color:var(--primary);font-weight:700}
+  .nav-item svg{color:#5f5c72}
+  .nav-item.on svg{color:var(--primary)}
+  .badge{position:absolute;top:-4px;right:2px;min-width:16px;height:16px;border-radius:8px;
+    background:#B3261E;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;
+    justify-content:center;padding:0 4px}
+
+  /* ---------- home ---------- */
+  .home-head{padding:14px 16px 0}
+  .home-hi{font-size:23px;font-weight:800}
+  .home-sub{font-size:13px;color:var(--muted);margin-top:3px}
+  .search{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E4E4F0;
+    border-radius:14px;padding:0 14px;height:50px;margin-top:16px}
+  .search svg{color:#8A8A9E;flex:none}
+  .search input{border:none;outline:none;flex:1;font-size:14.5px;font-family:inherit;background:transparent}
+  .search .clr{border:none;background:none;cursor:pointer;color:#8A8A9E;display:flex;padding:4px}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;padding:0 16px;margin:20px 0 10px}
+  .sec-head b{font-size:15.5px;font-weight:800}
+  .sec-head button{border:none;background:none;color:var(--primary);font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit}
+
+  .chips{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;width:76px;height:88px;border-radius:16px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit;border:none}
+  .chip .e{font-size:26px}
+  .chip .n{font-size:10.5px;font-weight:700;color:var(--ink)}
+  .chip:active{transform:scale(.95)}
+
+  .pop-row{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 6px;scrollbar-width:none}
+  .pop-row::-webkit-scrollbar{display:none}
+  .pop-row .pcard{width:150px;flex:none}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:2px 16px 24px}
+  .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 16px 24px}
+
+  /* ---------- product card ---------- */
+  .pcard{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;
+    display:flex;flex-direction:column;cursor:pointer;font-family:inherit}
+  .pcard:active{transform:scale(.98)}
+  .pimg{height:106px;background:rgba(91,79,233,.06);position:relative;display:flex;
+    align-items:center;justify-content:center;font-size:44px}
+  .off{position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:9.5px;
+    font-weight:800;padding:3px 6px;border-radius:7px}
+  .heart{position:absolute;top:0;right:0;width:36px;height:36px;border:none;background:none;
+    display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .heart svg{color:#8A8A9E;transition:transform .15s}
+  .heart.on svg{color:var(--pink);transform:scale(1.12)}
+  .pbody{padding:8px 10px 10px;display:flex;flex-direction:column;flex:1}
+  .pname{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prate{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted);margin-top:2px}
+  .prate svg{color:var(--star)}
+  .pfoot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;padding-top:6px}
+  .price{font-size:14px;font-weight:800}
+  .old{font-size:11px;color:var(--muted);text-decoration:line-through}
+  .addbtn{width:34px;height:34px;border:none;border-radius:10px;background:var(--primary);
+    color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+  .addbtn:active{transform:scale(.9)}
+
+  /* ---------- categories tab ---------- */
+  .ctile{border:none;border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:7px;cursor:pointer;font-family:inherit}
+  .ctile .e{font-size:34px}
+  .ctile .n{font-size:13.5px;font-weight:800;color:var(--ink)}
+  .ctile .c{font-size:11px;color:rgba(0,0,0,.55)}
+
+  /* ---------- details ---------- */
+  .det-img{margin:4px 20px 0;height:236px;border-radius:24px;background:rgba(91,79,233,.07);
+    display:flex;align-items:center;justify-content:center;font-size:108px}
+  .det-body{padding:18px 20px 8px}
+  .meta-row{display:flex;align-items:center;gap:10px}
+  .cat-pill{background:rgba(91,79,233,.1);color:var(--primary);font-size:11px;font-weight:700;
+    padding:4px 10px;border-radius:20px}
+  .rate-txt{font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:4px}
+  .rate-txt svg{color:var(--star)}
+  .det-name{font-size:22px;font-weight:800;margin-top:10px}
+  .det-price-row{display:flex;align-items:flex-end;gap:10px;margin-top:8px}
+  .det-price{font-size:22px;font-weight:800;color:var(--primary)}
+  .det-old{font-size:14px;color:var(--muted);text-decoration:line-through;padding-bottom:2px}
+  .det-off{background:rgba(255,107,53,.12);color:var(--accent);font-size:11.5px;font-weight:800;
+    padding:3px 8px;border-radius:8px;margin-bottom:2px}
+  .det-desc-h{font-size:15px;font-weight:800;margin:20px 0 8px}
+  .det-desc{font-size:13.5px;line-height:1.55;color:#3c3a4d}
+  .qty-row{display:flex;align-items:center;justify-content:space-between;margin-top:22px}
+  .qty-row b{font-size:15px}
+  .stepper{display:flex;align-items:center;gap:2px;background:rgba(91,79,233,.12);border-radius:12px;padding:4px}
+  .stepper button{width:38px;height:38px;border:none;background:none;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .stepper button:active{background:rgba(0,0,0,.07)}
+  .stepper .q{width:40px;text-align:center;font-weight:800;font-size:15px}
+  .in-cart-note{font-size:12.5px;color:var(--primary);margin-top:10px}
+  .det-cta{padding:10px 20px 16px}
+
+  /* ---------- cart ---------- */
+  .cart-list{padding:14px 16px 8px;display:flex;flex-direction:column;gap:12px}
+  .cline{display:flex;gap:12px;padding:12px}
+  .cline .img{width:56px;height:56px;border-radius:14px;background:rgba(91,79,233,.07);
+    display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}
+  .cline .mid{flex:1;min-width:0}
+  .cline .nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cline .each{font-size:11.5px;color:var(--muted);margin:2px 0 8px}
+  .cline .stepper{background:rgba(91,79,233,.08)}
+  .cline .stepper button{width:30px;height:30px}
+  .cline .stepper .q{width:30px}
+  .cline .right{text-align:right}
+  .cline .lt{font-size:14px;font-weight:800}
+  .cline .del{border:none;background:none;cursor:pointer;color:#D32F2F;padding:6px;margin-top:4px}
+  .bill{background:#fff;border-radius:24px 24px 0 0;padding:16px 20px 14px;
+    box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+  .bill-row{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}
+  .bill-row .save{color:var(--green);font-weight:700}
+  .bill-div{border-top:1px solid var(--border);margin:10px 0}
+  .bill-total{font-size:15.5px;font-weight:800;display:flex;justify-content:space-between}
+  .bill .btn{margin-top:12px;height:50px}
+
+  /* ---------- wishlist ---------- */
+  .wl-list{padding:8px 16px 20px;display:flex;flex-direction:column;gap:10px}
+  .wl-title{font-size:22px;font-weight:800;padding:16px 16px 8px}
+  .wline{display:flex;align-items:center;gap:12px;padding:12px}
+  .wline .img{width:56px;height:56px;border-radius:14px;background:rgba(91,79,233,.07);
+    display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}
+  .wline .mid{flex:1;min-width:0}
+  .wline .nm{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wline .pr{font-size:14px;font-weight:800;margin-top:2px}
+  .wline .iconbtn{color:var(--primary)}
+  .wline .del{color:#D32F2F}
+
+  /* ---------- empty state ---------- */
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px;gap:8px}
+  .empty .e{font-size:54px}
+  .empty b{font-size:17px}
+  .empty p{font-size:13px;color:var(--muted);line-height:1.5}
+
+  /* ---------- profile ---------- */
+  .prof{padding:20px 16px 28px}
+  .prof-top{display:flex;align-items:center;gap:16px}
+  .avatar{width:68px;height:68px;border-radius:50%;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+  .prof-name{font-size:19px;font-weight:800}
+  .prof-mail{font-size:13px;color:var(--muted);margin-top:2px}
+  .stats{display:flex;gap:12px;margin:22px 0}
+  .stat{flex:1;background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px 0;
+    display:flex;flex-direction:column;align-items:center;gap:5px}
+  .stat svg{color:var(--primary)}
+  .stat b{font-size:16px}
+  .stat span{font-size:11px;color:var(--muted)}
+  .tile{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--border);
+    border-radius:16px;padding:15px 16px;margin-bottom:10px;cursor:pointer;font-family:inherit;text-align:left;width:100%}
+  .tile svg{color:var(--ink);flex:none}
+  .tile .t{flex:1}
+  .tile .tt{font-size:14px;font-weight:700}
+  .tile .ts{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile.danger,.tile.danger svg{color:#D32F2F}
+  .prof-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:22px}
+
+  .about-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>🛒 Shop<span>Kart</span> — Live Preview</h1>
+  <p>Interactive web simulation of the Flutter app in this repo — same screens, colors,
+     20 products &amp; 6 categories as <code>lib/</code>. Nothing here is a build; run
+     <code>flutter run</code> on your machine to launch the real Android app.</p>
+  <div class="tip">👆 Tap “Use demo account” → add products to cart → place a demo order</div>
+</div>
+
+<div class="phone" id="phone">
+  <div class="statusbar"><span>9:41</span><span class="sicons">▲ ◼ ▮</span></div>
+
+  <!-- ================= SPLASH ================= -->
+  <div class="screen active" id="scr-splash" style="justify-content:center">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="logo-box"><svg viewBox="0 0 24 24"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2z"/></svg></div>
+      <div class="splash-name">ShopKart</div>
+      <div class="splash-sub">A demo e-commerce app for learning</div>
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- ================= LOGIN ================= -->
+  <div class="screen" id="scr-login">
+    <div class="scroll auth-wrap">
+      <div class="auth-logo"><svg viewBox="0 0 24 24"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2z"/></svg></div>
+      <div class="auth-title">Welcome back 👋</div>
+      <div class="auth-sub">Log in to continue shopping.</div>
+
+      <div class="field" id="f-email">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <input id="in-email" type="email" placeholder="Email" autocomplete="off">
+      </div>
+      <div class="field" id="f-pass">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm3 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        <input id="in-pass" type="password" placeholder="Password">
+      </div>
+      <div class="field-msg" id="login-err"></div>
+
+      <button class="btn btn-filled" data-act="login">Log in</button>
+      <div style="height:12px"></div>
+      <button class="btn btn-outlined" data-act="demo-login">⚡ Use demo account</button>
+
+      <div class="link-row">Don't have an account? <a data-act="go-signup">Sign up</a></div>
+      <div class="cred">Demo credentials<br>email: demo@shopkart.com<br>password: demo123</div>
+    </div>
+  </div>
+
+  <!-- ================= SIGNUP ================= -->
+  <div class="screen overlay" id="scr-signup">
+    <div class="appbar">
+      <button class="iconbtn" data-act="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+      <div class="title">Create account</div>
+    </div>
+    <div class="scroll auth-wrap" style="padding-top:4px">
+      <div class="auth-title">Join ShopKart 🛍️</div>
+      <div class="auth-sub">It takes less than a minute — no real data is stored.</div>
+      <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><input id="su-name" placeholder="Full name"></div>
+      <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><input id="su-email" type="email" placeholder="Email"></div>
+      <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm3 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg><input id="su-pass" type="password" placeholder="Password (min 6 characters)"></div>
+      <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm3 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg><input id="su-confirm" type="password" placeholder="Confirm password"></div>
+      <div class="field-msg" id="su-err"></div>
+      <button class="btn btn-filled" data-act="signup">Create account</button>
+      <div class="about-note">Accounts are stored only in this preview (like SharedPreferences in the app).</div>
+    </div>
+  </div>
+
+  <!-- ================= SHELL (5 tabs) ================= -->
+  <div class="screen" id="scr-shell">
+    <div class="tab active" id="tab-home">
+      <div class="scroll">
+        <div class="home-head">
+          <div class="home-hi" id="home-hi">Hi, Demo 👋</div>
+          <div class="home-sub">Find something you love.</div>
+          <div class="search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input id="in-search" placeholder="Search products…">
+            <button class="clr" id="search-clr" style="display:none" data-act="clear-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+          </div>
+        </div>
+        <div class="sec-head"><b>Categories</b><button data-act="tab" data-id="1">See all</button></div>
+        <div class="chips" id="home-cats"></div>
+        <div class="sec-head"><b>Popular 🔥</b></div>
+        <div class="pop-row" id="home-popular"></div>
+        <div class="sec-head" style="margin-top:22px"><b id="grid-title">All products (20)</b></div>
+        <div class="grid2" id="home-grid"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-categories">
+      <div class="scroll">
+        <div class="home-head">
+          <div class="home-hi">Shop by category</div>
+          <div class="home-sub">6 categories in the demo catalog.</div>
+        </div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-cart" style="background:var(--bg)"></div>
+
+    <div class="tab" id="tab-wishlist"></div>
+
+    <div class="tab" id="tab-profile">
+      <div class="scroll"><div class="prof" id="prof-body"></div></div>
+    </div>
+
+    <div class="navbar" id="navbar"></div>
+  </div>
+
+  <!-- ================= PRODUCT DETAILS (overlay) ================= -->
+  <div class="screen overlay" id="scr-details">
+    <div class="appbar">
+      <button class="iconbtn" data-act="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+      <div style="flex:1"></div>
+      <button class="iconbtn" id="det-heart"></button>
+    </div>
+    <div class="scroll" id="det-scroll"></div>
+    <div class="det-cta" id="det-cta"></div>
+  </div>
+
+  <!-- ================= CATEGORY PRODUCTS (overlay) ================= -->
+  <div class="screen overlay" id="scr-catproducts">
+    <div class="appbar">
+      <button class="iconbtn" data-act="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+      <div class="title" id="cp-title"></div>
+    </div>
+    <div class="scroll"><div class="grid2" id="cp-grid" style="padding-top:8px"></div></div>
+  </div>
+
+  <div class="snack" id="snack"></div>
+
+  <div class="modal-veil" id="checkout-dialog">
+    <div class="dialog">
+      <h3>Place order?</h3>
+      <p>This is a demo app — no payment happens and no real order is placed. Your cart will be cleared.</p>
+      <div class="row">
+        <button data-act="dialog-cancel">Cancel</button>
+        <button class="fill" data-act="dialog-ok">Place order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   SHOPKART PREVIEW - mirrors lib/data/dummy_data.dart exactly.
+   ================================================================ */
+const CATEGORIES = [
+  {id:'c1', name:'Electronics',  emoji:'💻', color:'#B3D4FF'},
+  {id:'c2', name:'Fashion',      emoji:'👕', color:'#FFC9DE'},
+  {id:'c3', name:'Shoes',        emoji:'👟', color:'#FFD1B3'},
+  {id:'c4', name:'Watches',      emoji:'⌚', color:'#D4C5F9'},
+  {id:'c5', name:'Home & Living',emoji:'🏠', color:'#BDEAC2'},
+  {id:'c6', name:'Beauty',       emoji:'💄', color:'#E8C5E8'},
+];
+
+const PRODUCTS = [
+  {id:'p1', name:'Wireless Headphones', categoryId:'c1', emoji:'🎧', price:2499, oldPrice:3499, rating:4.6, reviewCount:214,
+   description:'Over-ear Bluetooth headphones with deep bass, 30-hour battery life and fast charging. Foldable design with a premium carry pouch.'},
+  {id:'p2', name:'Smartphone Pro', categoryId:'c1', emoji:'📱', price:15999, oldPrice:null, rating:4.4, reviewCount:890,
+   description:'6.5-inch HD+ display, 8 GB RAM, 128 GB storage and a 50 MP AI camera. Comes with a 5000 mAh battery and 2-year warranty.'},
+  {id:'p3', name:'Bluetooth Speaker', categoryId:'c1', emoji:'🔊', price:1299, oldPrice:1899, rating:4.3, reviewCount:132,
+   description:'Portable 20 W speaker with IPX7 water resistance and 12 hours of playback. Pair two speakers together for true stereo sound.'},
+  {id:'p4', name:'Action Camera 4K', categoryId:'c1', emoji:'📷', price:4999, oldPrice:null, rating:4.2, reviewCount:76,
+   description:'4K30 video, electronic stabilisation and a rugged waterproof body good up to 10 m without a case. Perfect for travel vlogs.'},
+  {id:'p5', name:'Fast Charger 65W', categoryId:'c1', emoji:'🔌', price:799, oldPrice:null, rating:4.5, reviewCount:305,
+   description:'GaN USB-C charger that powers laptops and phones at full speed. Compact size with built-in over-heat protection.'},
+  {id:'p6', name:'Cotton T-Shirt', categoryId:'c2', emoji:'👕', price:499, oldPrice:799, rating:4.1, reviewCount:540,
+   description:'100% combed cotton, pre-shrunk, regular fit. Feels soft wash after wash. Available in classic solid colours.'},
+  {id:'p7', name:'Denim Jacket', categoryId:'c2', emoji:'🧥', price:1899, oldPrice:2499, rating:4.5, reviewCount:210,
+   description:'Classic blue denim jacket with button closure and two chest pockets. A timeless layer that goes with everything.'},
+  {id:'p8', name:'Summer Floral Dress', categoryId:'c2', emoji:'👗', price:899, oldPrice:null, rating:4.3, reviewCount:118,
+   description:'Lightweight knee-length floral dress, perfect for hot summer days. Breathable rayon fabric with a flared silhouette.'},
+  {id:'p9', name:'Leather Wallet', categoryId:'c2', emoji:'👛', price:649, oldPrice:999, rating:4.0, reviewCount:95,
+   description:'Genuine leather bi-fold wallet with 6 card slots and RFID blocking. Slim profile that fits comfortably in your pocket.'},
+  {id:'p10', name:'Running Shoes', categoryId:'c3', emoji:'👟', price:2299, oldPrice:2999, rating:4.6, reviewCount:421,
+   description:'Lightweight mesh running shoes with a cushioned sole for daily runs. Reflective strips keep you visible on evening jogs.'},
+  {id:'p11', name:'Casual Sneakers', categoryId:'c3', emoji:'👟', price:1499, oldPrice:null, rating:4.2, reviewCount:260,
+   description:'Everyday sneakers with a breathable knit upper and grip outsole. Slip them on for errands, college or casual outings.'},
+  {id:'p12', name:'Comfy Flip Flops', categoryId:'c3', emoji:'🩴', price:299, oldPrice:null, rating:3.9, reviewCount:77,
+   description:'Soft, water-friendly flip flops with an anti-skid sole. Perfect for the beach, bathroom or a quick outing.'},
+  {id:'p13', name:'Classic Analog Watch', categoryId:'c4', emoji:'⌚', price:1999, oldPrice:null, rating:4.4, reviewCount:183,
+   description:'Stainless steel analog watch with leather strap, 3 ATM water resistant. A dress watch that works with formal wear.'},
+  {id:'p14', name:'Smart Watch Pro', categoryId:'c4', emoji:'⌚', price:3499, oldPrice:4499, rating:4.5, reviewCount:612,
+   description:"1.8'' AMOLED display, SpO2 + heart-rate tracking and 7-day battery. Answers calls and shows notifications from your phone."},
+  {id:'p15', name:'Minimalist Watch', categoryId:'c4', emoji:'🕰️', price:1299, oldPrice:null, rating:4.0, reviewCount:58,
+   description:'Slim minimalist dial with a mesh strap — goes with everything. Ultra-thin case, only 7 mm thick.'},
+  {id:'p16', name:'Scented Candle', categoryId:'c5', emoji:'🕯️', price:349, oldPrice:null, rating:4.3, reviewCount:89,
+   description:'Hand-poured soy wax candle with lavender & vanilla aroma. Approximately 35 hours of burn time in a reusable glass jar.'},
+  {id:'p17', name:'Ceramic Coffee Mug', categoryId:'c5', emoji:'☕', price:299, oldPrice:399, rating:4.7, reviewCount:402,
+   description:'350 ml glazed ceramic mug, microwave & dishwasher safe. The handle is shaped for a comfortable, steady grip.'},
+  {id:'p18', name:'Throw Pillow Cover', categoryId:'c5', emoji:'🛋️', price:449, oldPrice:null, rating:4.1, reviewCount:64,
+   description:'Soft linen-blend cushion cover, 45×45 cm with a hidden zip closure. Instantly refreshes your sofa or bed.'},
+  {id:'p19', name:'Face Moisturizer', categoryId:'c6', emoji:'🧴', price:599, oldPrice:null, rating:4.4, reviewCount:231,
+   description:'Lightweight daily moisturizer with hyaluronic acid & vitamin E. Non-greasy formula for all skin types, 100 ml.'},
+  {id:'p20', name:'Lipstick Set (3 pcs)', categoryId:'c6', emoji:'💄', price:749, oldPrice:999, rating:4.2, reviewCount:156,
+   description:'Matte liquid lipstick set of 3 long-wear, transfer-proof shades. Enriched with vitamin E so lips stay comfortable.'},
+];
+
+const DEMO = {name:'Demo User', email:'demo@shopkart.com', password:'demo123'};
+
+/* ---------------- state (mirrors the 4 Providers) ---------------- */
+let users = {[DEMO.email]: {name:DEMO.name, password:DEMO.password}}; // AuthRepository
+let user = null;                 // AuthProvider
+let cart = {};                   // CartProvider  {productId: qty}
+let wishlist = new Set();        // WishlistProvider
+let currentTab = 0;
+let detailId = null, detailQty = 1, catId = null;
+let searchQ = '';
+
+/* ---------------- helpers ---------------- */
+const $ = (s) => document.querySelector(s);
+const byId = (id) => PRODUCTS.find(p => p.id === id);
+const catName = (cid) => (CATEGORIES.find(c => c.id === cid) || {}).name;
+
+function inr(n){ // Indian rupee grouping, same as Formatters.price
+  const d = Math.round(n).toString();
+  if(d.length <= 3) return '₹' + d;
+  const last3 = d.slice(-3);
+  let rest = d.slice(0, -3), parts = [];
+  while(rest.length > 2){ parts.unshift(rest.slice(-2)); rest = rest.slice(0, -2); }
+  if(rest) parts.unshift(rest);
+  return '₹' + parts.join(',') + ',' + last3;
+}
+const initials = (name) => {
+  const p = name.trim().split(/\s+/);
+  return p.length === 1 ? p[0][0].toUpperCase() : (p[0][0] + p[p.length-1][0]).toUpperCase();
+};
+const cartCount = () => Object.values(cart).reduce((a,b) => a+b, 0);
+const cartTotal = () => Object.entries(cart).reduce((s,[id,q]) => s + byId(id).price*q, 0);
+const cartSaved = () => Object.entries(cart).reduce((s,[id,q]) => {
+  const p = byId(id); return s + (p.oldPrice && p.oldPrice > p.price ? (p.oldPrice-p.price)*q : 0);
+}, 0);
+
+/* persist like SharedPreferences */
+function save(){ try{ localStorage.setItem('sk_preview', JSON.stringify({users, user, cart, wishlist:[...wishlist]})); }catch(e){} }
+function load(){ try{
+  const d = JSON.parse(localStorage.getItem('sk_preview') || 'null');
+  if(d){ users = d.users || users; user = d.user || null; cart = d.cart || {}; wishlist = new Set(d.wishlist || []); }
+}catch(e){} }
+
+/* ---------------- icons ---------------- */
+const I = {
+  cart:'M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z',
+  heart:'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+  star:'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  remove:'M19 13H5v-2h14v2z',
+  trash:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  person:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  grid:'M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z',
+  check:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+  bolt:'M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z',
+  info:'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+  chev:'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+  logout:'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+  receipt:'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 12H7v-2h10v2zm0-4H7V9h10v2zm0-4H7V5h10v2z',
+};
+const svg = (name, size=22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${I[name]}"/></svg>`;
+
+/* ---------------- snackbar ---------------- */
+let snackTimer = null;
+function toast(msg, ms=1600){
+  const el = $('#snack');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(snackTimer);
+  snackTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* ---------------- navigation ---------------- */
+function show(screenId){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('#' + screenId).classList.add('active');
+}
+function showTab(i){
+  currentTab = i;
+  ['home','categories','cart','wishlist','profile'].forEach((t, idx) => {
+    $('#tab-' + t).classList.toggle('active', idx === i);
+  });
+  renderNav(); renderTabContent(i);
+}
+function renderNav(){
+  const items = [
+    {icon:'home', label:'Home'}, {icon:'grid', label:'Categories'},
+    {icon:'cart', label:'Cart', badge:cartCount()}, {icon:'heart', label:'Wishlist'},
+    {icon:'person', label:'Profile'},
+  ];
+  $('#navbar').innerHTML = items.map((it, i) => `
+    <button class="nav-item ${i===currentTab?'on':''}" data-act="tab" data-id="${i}">
+      <div class="pill">${svg(it.icon, 22)}${it.badge ? `<span class="badge">${it.badge}</span>` : ''}</div>
+      <span>${it.label}</span>
+    </button>`).join('');
+}
+
+/* ---------------- shared renders ---------------- */
+function productCard(p){
+  const off = p.oldPrice && p.oldPrice > p.price
+    ? `<span class="off">${Math.round((p.oldPrice-p.price)/p.oldPrice*100)}% OFF</span>` : '';
+  const hearted = wishlist.has(p.id) ? 'on' : '';
+  return `
+  <div class="pcard" data-act="details" data-id="${p.id}">
+    <div class="pimg">${p.emoji}${off}
+      <button class="heart ${hearted}" data-act="wish" data-id="${p.id}">${svg('heart',20)}</button>
+    </div>
+    <div class="pbody">
+      <div class="pname">${p.name}</div>
+      <div class="prate">${svg('star',13)} ${p.rating} (${p.reviewCount})</div>
+      <div class="pfoot">
+        <div><div class="price">${inr(p.price)}</div>
+        ${p.oldPrice && p.oldPrice > p.price ? `<div class="old">${inr(p.oldPrice)}</div>` : ''}</div>
+        <button class="addbtn" data-act="add-cart" data-id="${p.id}">${svg('add',19)}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  $('#home-cats').innerHTML = CATEGORIES.map(c => `
+    <button class="chip" style="background:${c.color}" data-act="open-cat" data-id="${c.id}">
+      <span class="e">${c.emoji}</span><span class="n">${c.name}</span>
+    </button>`).join('');
+  $('#home-popular').innerHTML =
+    PRODUCTS.filter(p => p.rating >= 4.5).map(productCard).join('');
+
+  const list = searchQ ? PRODUCTS.filter(p => p.name.toLowerCase().includes(searchQ.toLowerCase())) : PRODUCTS;
+  $('#grid-title').textContent = searchQ ? `Results for "${searchQ}"` : `All products (${PRODUCTS.length})`;
+  $('#home-grid').innerHTML = list.length ? list.map(productCard).join('')
+    : `<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px;line-height:1.6">🔍<br><br>No products found.<br>Try a different search.</div>`;
+}
+
+/* ---------------- CATEGORIES ---------------- */
+function renderCatGrid(){
+  $('#cat-grid').innerHTML = CATEGORIES.map(c => {
+    const n = PRODUCTS.filter(p => p.categoryId === c.id).length;
+    return `<button class="ctile" style="background:${c.color}" data-act="open-cat" data-id="${c.id}">
+      <span class="e">${c.emoji}</span><span class="n">${c.name}</span><span class="c">${n} products</span>
+    </button>`;
+  }).join('');
+}
+function openCategory(id){
+  catId = id;
+  const c = CATEGORIES.find(x => x.id === id);
+  $('#cp-title').innerHTML = `<span>${c.emoji}</span><span>${c.name}</span>`;
+  $('#cp-grid').innerHTML = PRODUCTS.filter(p => p.categoryId === id).map(productCard).join('');
+  show('scr-catproducts');
+}
+
+/* ---------------- DETAILS ---------------- */
+function openDetails(id){
+  detailId = id; detailQty = 1;
+  renderDetails();
+  show('scr-details');
+}
+function renderDetails(){
+  const p = byId(detailId);
+  const hearted = wishlist.has(p.id);
+  $('#det-heart').innerHTML = svg('heart', 22);
+  $('#det-heart').style.color = hearted ? '#E91E63' : '#1B1B2F';
+  $('#det-heart').dataset.act = 'wish'; $('#det-heart').dataset.id = p.id;
+
+  const off = p.oldPrice && p.oldPrice > p.price
+    ? `<span class="det-off">${Math.round((p.oldPrice-p.price)/p.oldPrice*100)}% OFF</span>` : '';
+  const inCart = cart[p.id] || 0;
+  $('#det-scroll').innerHTML = `
+    <div class="det-img">${p.emoji}</div>
+    <div class="det-body">
+      <div class="meta-row">
+        <span class="cat-pill">${catName(p.categoryId) || ''}</span>
+        <span class="rate-txt">${svg('star',15)} ${p.rating} · ${p.reviewCount} reviews</span>
+      </div>
+      <div class="det-name">${p.name}</div>
+      <div class="det-price-row">
+        <span class="det-price">${inr(p.price)}</span>
+        ${p.oldPrice && p.oldPrice > p.price ? `<span class="det-old">${inr(p.oldPrice)}</span>` : ''}${off}
+      </div>
+      <div class="det-desc-h">Description</div>
+      <div class="det-desc">${p.description}</div>
+      <div class="qty-row"><b>Quantity</b>
+        <div class="stepper">
+          <button data-act="det-dec">${svg('remove',18)}</button>
+          <span class="q">${detailQty}</span>
+          <button data-act="det-inc">${svg('add',18)}</button>
+        </div>
+      </div>
+      ${inCart ? `<div class="in-cart-note">🛒 ${inCart} already in your cart</div>` : ''}
+    </div>`;
+  $('#det-cta').innerHTML = `
+    <button class="btn btn-accent" data-act="det-add" data-id="${p.id}">
+      ${svg('cart',20)} Add to cart · ${inr(p.price * detailQty)}
+    </button>`;
+}
+
+/* ---------------- CART ---------------- */
+function renderCart(){
+  const tab = $('#tab-cart');
+  if(Object.keys(cart).length === 0){
+    tab.innerHTML = `<div class="empty"><div class="e">🛒</div><b>Your cart is empty</b>
+      <p>Browse the catalog and add some products!</p></div>`;
+    return;
+  }
+  const lines = Object.entries(cart).map(([id, q]) => ({p: byId(id), q}));
+  tab.innerHTML = `
+    <div class="scroll"><div class="cart-list">
+      ${lines.map(({p, q}) => `
+        <div class="card cline">
+          <div class="img">${p.emoji}</div>
+          <div class="mid">
+            <div class="nm">${p.name}</div>
+            <div class="each">${inr(p.price)} each</div>
+            <div class="stepper">
+              <button data-act="cart-dec" data-id="${p.id}">${svg('remove',16)}</button>
+              <span class="q">${q}</span>
+              <button data-act="cart-inc" data-id="${p.id}">${svg('add',16)}</button>
+            </div>
+          </div>
+          <div class="right">
+            <div class="lt">${inr(p.price * q)}</div>
+            <button class="del" data-act="cart-del" data-id="${p.id}">${svg('trash',20)}</button>
+          </div>
+        </div>`).join('')}
+    </div></div>
+    <div class="bill">
+      <div class="bill-row"><span>Items (${cartCount()})</span><span>${inr(cartTotal())}</span></div>
+      <div class="bill-row"><span>Delivery</span><span>FREE</span></div>
+      ${cartSaved() > 0 ? `<div class="bill-row"><span>You saved</span><span class="save">- ${inr(cartSaved())}</span></div>` : ''}
+      <div class="bill-div"></div>
+      <div class="bill-total"><span>Total</span><span>${inr(cartTotal())}</span></div>
+      <button class="btn btn-accent" data-act="checkout">${svg('check',19)} Place order (demo)</button>
+    </div>`;
+}
+
+/* ---------------- WISHLIST ---------------- */
+function renderWishlist(){
+  const tab = $('#tab-wishlist');
+  if(wishlist.size === 0){
+    tab.innerHTML = `<div class="empty"><div class="e">💔</div><b>Your wishlist is empty</b>
+      <p>Tap the ❤ on any product to save it here.</p></div>`;
+    return;
+  }
+  tab.innerHTML = `
+    <div class="wl-title">My wishlist ❤️ (${wishlist.size})</div>
+    <div class="scroll"><div class="wl-list">
+      ${[...wishlist].map(id => { const p = byId(id); if(!p) return ''; return `
+        <div class="card wline" data-act="details" data-id="${p.id}">
+          <div class="img">${p.emoji}</div>
+          <div class="mid"><div class="nm">${p.name}</div><div class="pr">${inr(p.price)}</div></div>
+          <button class="iconbtn" data-act="wl-to-cart" data-id="${p.id}" title="Move to cart">${svg('cart',21)}</button>
+          <button class="iconbtn del" data-act="wl-del" data-id="${p.id}" title="Remove">${svg('trash',20)}</button>
+        </div>`; }).join('')}
+    </div></div>`;
+}
+
+/* ---------------- PROFILE ---------------- */
+function renderProfile(){
+  const u = user || {name:'Guest', email:'—'};
+  $('#prof-body').innerHTML = `
+    <div class="prof-top">
+      <div class="avatar">${initials(u.name)}</div>
+      <div><div class="prof-name">${u.name}</div><div class="prof-mail">${u.email}</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat">${svg('cart',21)}<b>${cartCount()}</b><span>Cart</span></div>
+      <div class="stat">${svg('heart',21)}<b>${wishlist.size}</b><span>Wishlist</span></div>
+      <div class="stat">${svg('receipt',21)}<b>0</b><span>Orders</span></div>
+    </div>
+    <button class="tile" data-act="about">${svg('info',21)}
+      <span class="t"><span class="tt">About this demo app</span></span>${svg('chev',20)}</button>
+    <button class="tile" data-act="demo-hint">${svg('bolt',21)}
+      <span class="t"><span class="tt">Login as demo account</span>
+      <span class="ts">demo@shopkart.com / demo123</span></span>${svg('chev',20)}</button>
+    <button class="tile danger" data-act="logout">${svg('logout',21)}
+      <span class="t"><span class="tt">Log out</span></span></button>
+    <div class="prof-foot">Made for learning Android app structure 💜</div>`;
+}
+
+function renderTabContent(i){
+  if(i === 0) renderHome();
+  if(i === 1) renderCatGrid();
+  if(i === 2) renderCart();
+  if(i === 3) renderWishlist();
+  if(i === 4) renderProfile();
+}
+
+/* ---------------- auth flows ---------------- */
+function enterApp(){
+  $('#home-hi').textContent = `Hi, ${user.name.split(' ')[0]} 👋`;
+  show('scr-shell'); showTab(0);
+  toast(`Welcome, ${user.name}! 🛍️`);
+}
+function loginErr(msg){
+  $('#login-err').textContent = msg; $('#login-err').classList.add('show');
+  $('#f-email').classList.add('err'); $('#f-pass').classList.add('err');
+  setTimeout(() => { $('#login-err').classList.remove('show');
+    $('#f-email').classList.remove('err'); $('#f-pass').classList.remove('err'); }, 2600);
+}
+function doLogin(email, password){
+  email = email.trim().toLowerCase();
+  if(!email) return loginErr('Please enter your email');
+  if(!/^[\\w.+-]+@[\\w-]+\\.[\\w.]+$/.test(email)) return loginErr('That does not look like a valid email');
+  if(!password) return loginErr('Please enter your password');
+  if(!users[email]) return loginErr('No account found for this email. Try signing up!');
+  if(users[email].password !== password) return loginErr('Wrong password. Please try again.');
+  user = {name: users[email].name, email};
+  save(); enterApp();
+}
+function doSignup(){
+  const name = $('#su-name').value.trim();
+  const email = $('#su-email').value.trim().toLowerCase();
+  const pass = $('#su-pass').value;
+  const conf = $('#su-confirm').value;
+  const err = (m) => { $('#su-err').textContent = m; $('#su-err').classList.add('show');
+    setTimeout(() => $('#su-err').classList.remove('show'), 2600); };
+  if(name.length < 2) return err('Please enter your name');
+  if(!/^[\\w.+-]+@[\\w-]+\\.[\\w.]+$/.test(email)) return err('Please enter a valid email');
+  if(pass.length < 6) return err('Password must be at least 6 characters');
+  if(pass !== conf) return err('Passwords do not match');
+  if(users[email]) return err('An account with this email already exists. Please log in.');
+  users[email] = {name, password: pass};
+  user = {name, email};
+  save(); show('scr-shell'); enterApp();
+  toast('Account created. Welcome to ShopKart! 🎉');
+}
+
+/* ---------------- cart & wishlist actions ---------------- */
+function addToCart(id, qty=1, silent=false){
+  cart[id] = (cart[id] || 0) + qty;
+  save(); renderNav();
+  if(currentTab === 2) renderCart();
+  if(currentTab === 4) renderProfile();
+  if(!silent) toast(`${byId(id).name} added to cart 🛒`, 1200);
+}
+function toggleWish(id){
+  if(wishlist.has(id)) wishlist.delete(id); else wishlist.add(id);
+  save(); renderNav();
+  if(currentTab === 0) renderHome();
+  if(currentTab === 3) renderWishlist();
+  if(currentTab === 4) renderProfile();
+  if(detailId && $('#scr-details').classList.contains('active')) renderDetails();
+  toast(wishlist.has(id) ? 'Added to wishlist ❤️' : 'Removed from wishlist 💔', 1000);
+}
+
+/* ---------------- checkout ---------------- */
+function checkout(){ $('#checkout-dialog').classList.add('show'); }
+function checkoutDone(){
+  $('#checkout-dialog').classList.remove('show');
+  cart = {}; save(); renderNav(); renderCart();
+  toast('🎉 Order placed! (demo only)', 2200);
+}
+
+/* ---------------- event delegation ---------------- */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]');
+  if(!t) return;
+  const act = t.dataset.act, id = t.dataset.id;
+  switch(act){
+    case 'tab': showTab(+id); break;
+    case 'details': openDetails(id); break;
+    case 'open-cat': openCategory(id); break;
+    case 'back': show('scr-shell'); break;
+    case 'wish': e.stopPropagation(); toggleWish(id); break;
+    case 'add-cart': e.stopPropagation(); addToCart(id); break;
+    case 'det-inc': detailQty++; renderDetails(); break;
+    case 'det-dec': detailQty = Math.max(1, detailQty-1); renderDetails(); break;
+    case 'det-add': addToCart(detailId, detailQty); detailQty = 1; renderDetails(); break;
+    case 'cart-inc': addToCart(id, 1, true); break;
+    case 'cart-dec':
+      cart[id]--; if(cart[id] <= 0) delete cart[id];
+      save(); renderNav(); renderCart(); renderProfile(); break;
+    case 'cart-del': delete cart[id]; save(); renderNav(); renderCart(); renderProfile(); break;
+    case 'wl-del': toggleWish(id); break;
+    case 'wl-to-cart': addToCart(id); wishlist.delete(id); save(); renderNav(); renderWishlist(); renderProfile(); break;
+    case 'checkout': checkout(); break;
+    case 'dialog-ok': checkoutDone(); break;
+    case 'dialog-cancel': $('#checkout-dialog').classList.remove('show'); break;
+    case 'login': doLogin($('#in-email').value, $('#in-pass').value); break;
+    case 'demo-login': $('#in-email').value = DEMO.email; $('#in-pass').value = DEMO.password; doLogin(DEMO.email, DEMO.password); break;
+    case 'go-signup': show('scr-signup'); break;
+    case 'signup': doSignup(); break;
+    case 'logout': user = null; save(); $('#in-email').value = ''; $('#in-pass').value = ''; show('scr-login'); toast('Logged out 👋'); break;
+    case 'about': toast('ShopKart 1.0.0 — a Flutter demo built to learn app structure 💜', 2600); break;
+    case 'demo-hint': toast('You are logged in already. Log out first, then use the demo button.', 2400); break;
+    case 'clear-search': searchQ = ''; $('#in-search').value = ''; $('#search-clr').style.display = 'none'; renderHome(); break;
+  }
+});
+$('#in-search').addEventListener('input', (e) => {
+  searchQ = e.target.value;
+  $('#search-clr').style.display = searchQ ? 'flex' : 'none';
+  renderHome();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    if($('#scr-login').classList.contains('active')) doLogin($('#in-email').value, $('#in-pass').value);
+    if($('#scr-signup').classList.contains('active')) doSignup();
+  }
+});
+
+/* ---------------- boot (mirrors main.dart + splash) ---------------- */
+load();
+renderNav();
+setTimeout(() => {
+  if(user){ $('#home-hi').textContent = `Hi, ${user.name.split(' ')[0]} 👋`; show('scr-shell'); showTab(0); }
+  else show('scr-login');
+}, 1600);
+</script>
+</body>
+</html>
